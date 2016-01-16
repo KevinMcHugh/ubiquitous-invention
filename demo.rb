@@ -1,10 +1,10 @@
 class Person
-  attr_reader :stress, :name, :alive
-  attr_accessor :religion
+  attr_reader :name, :alive
+  attr_accessor :religion, :health
 
   def initialize
     @name = Faker::Name.name
-    @stress = 0
+    @health = 75 + Random.rand(50)
     @alive = true
   end
 
@@ -26,10 +26,18 @@ class Religion
     @policies = 3.times.map { Policy.new }
   end
 
-  def inspect
+  def long_string
     "Religion #{name}, \n" +
       "     Policies #{policies.map(&:inspect)}\n" +
-      "Alive: #{faithful.count(&:alive?)}/ #{faithful.count}"
+      "     Alive: #{number_of_living_faithful}/ #{faithful.count}"
+  end
+
+  def inspect
+    name
+  end
+
+  def number_of_living_faithful
+    faithful.count(&:alive?)
   end
 end
 
@@ -39,16 +47,17 @@ class Policy
   end
 
   def self.consequences
-    [0, 1, 5, 10, 50]
+    [5, 10, 25, 50, 75]
   end
 
+  attr_reader :act, :consequence
   def initialize
     @act = self.class.acts.sample
     @consequence = self.class.consequences.sample
   end
 
   def inspect
-    "#{@act} => #{@consequence}"
+    "#{act} => #{consequence}"
   end
 end
 
@@ -57,11 +66,32 @@ require 'pp'
 require 'pry'
 religions = 5.times.map do
   r = Religion.new(Faker::App.name)
-  pp r
+  puts r.long_string
   r
 end
-binding.pry
 
 100.times do |i|
+  event = Policy.acts.sample
+  difficulty = Random.rand(100)
+  population = religions.map(&:number_of_living_faithful).reduce(:+)
 
+  break if population <= 0
+  puts "Year #{i}: A plague strikes those who #{event}. Severity is #{difficulty}%"
+  religions.each do |r|
+    if r.number_of_living_faithful > 0
+      policy = r.policies.find { |p| p.act == event }
+      consequence_value = policy && policy.consequence || 100
+      check = (100 - consequence_value)
+      pre = r.number_of_living_faithful
+      if check < difficulty
+        r.faithful.each { |person| person.health -= 0.10 * difficulty }
+      end
+      r.faithful.each { |person| person.kill! if person.health <= 0 }
+      post = r.number_of_living_faithful
+      puts "   The faithful of #{r.name} number #{post}. #{pre - post} have died in the plague."
+    end
+  end
 end
+
+
+

@@ -1,4 +1,3 @@
-
 module RollsDice
   def d(int)
     Random.rand(int) + 1
@@ -9,7 +8,7 @@ class Religion
   attr_reader :world, :name, :faithful, :policies
   def initialize(world)
     @world = world
-    @name = Faker::App.name
+    @name = Faker::Name.first_name
     @faithful = 100.times.map { Person.new(self) }
     @policies = 3.times.map { Policy.new }
   end
@@ -33,7 +32,7 @@ class Religion
 
     policy = policies.find { |p| p.act == world.active_event.affects }
     faithful.each { |p| p.tick(policy, world) }
-    puts "   The faithful of #{name} number #{number_of_living_faithful}."
+    puts "   The followers of #{name} number #{number_of_living_faithful}."
   end
 end
 

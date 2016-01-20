@@ -6,6 +6,7 @@ end
 class Person
   include RollsDice
   attr_reader :name, :alive, :age, :gender, :religion, :months_until_birth, :pregnant
+  attr_reader :cause_of_death, :year_of_death
   attr_accessor :health
 
   def initialize(religion)
@@ -23,23 +24,33 @@ class Person
     @alive = false
   end
 
-  def tick(policy, active_event)
+  def tick(policy, world)
     consequence_value = policy && policy.consequence || 100
     check = (100 - consequence_value)
+    event = world.active_event
 
-    if check < active_event.severity
-      @health -= active_event.severity
-    end
+    subtract_health(event.severity, event.affects, world.year) if check < event.severity
 
+    age!(world.year)
     kill! if health <= 0
   end
 
-  def age!
+  def age!(year)
     @age += 1
     if (age > 45 && health > 10) || age < 80
-      health -= 1
+      subtract_health(1, :old_age, year)
     else
-      health += 1
+      @health += 1
+    end
+  end
+
+  def subtract_health(int, reason, year)
+    return unless alive?
+    @health -= int
+    if health <= 0
+      kill!
+      @cause_of_death = reason
+      @year_of_death = year
     end
   end
 
@@ -76,12 +87,10 @@ class Religion
 
   def tick
     return unless number_of_living_faithful > 0
-    pre = number_of_living_faithful
 
     policy = policies.find { |p| p.act == world.active_event.affects }
-    faithful.each { |p| p.tick(policy, world.active_event) }
-    post = number_of_living_faithful
-    puts "   The faithful of #{name} number #{post}. #{pre - post} have died in the plague."
+    faithful.each { |p| p.tick(policy, world) }
+    puts "   The faithful of #{name} number #{number_of_living_faithful}."
   end
 end
 
@@ -122,11 +131,20 @@ class World
     religions.map(&:number_of_living_faithful).reduce(:+)
   end
 
+  def people
+    religions.flat_map(&:faithful)
+  end
+
   def tick
     @year += 1
     @active_event = Event.new
     puts "Year #{year}: A plague strikes those who #{active_event.affects}. Severity is #{active_event.severity}%"
     religions.each(&:tick)
+    causes_of_death = people.find_all { |p| p.year_of_death == year }.map(&:cause_of_death)
+    causes_of_death.inject(Hash.new(0)) { |h, e| h[e] += 1 ; h }.each_pair do |cause, count|
+      puts "  #{count} have died due to #{cause}"
+    end
+    puts "#{population} survive."
   end
 end
 
@@ -143,7 +161,7 @@ require 'faker'
 require 'pp'
 require 'pry'
 world = World.new
-religions = 5.times.map do
+5.times do
   r = world.add_religion
   puts r.long_string
   r
@@ -151,6 +169,5 @@ end
 
 100.times do |i|
   break if world.population <= 0
-
   world.tick
 end

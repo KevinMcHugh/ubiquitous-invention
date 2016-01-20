@@ -5,23 +5,33 @@ module RollsDice
 end
 class Person
   include RollsDice
-  attr_reader :name, :alive, :age, :gender, :months_until_birth, :pregnant
-  attr_accessor :religion, :health
+  attr_reader :name, :alive, :age, :gender, :religion, :months_until_birth, :pregnant
+  attr_accessor :health
 
-  def initialize
+  def initialize(religion)
     @name = Faker::Name.name
     @health = 75 + d(50)
     @alive = true
     @age = d(70)
     @gender = d(2) == 1 ? :man : :woman
+    @religion = religion
   end
 
-  def alive?
-    alive
-  end
+  def alive?; alive; end
 
   def kill!
     @alive = false
+  end
+
+  def tick(policy, active_event)
+    consequence_value = policy && policy.consequence || 100
+    check = (100 - consequence_value)
+
+    if check < active_event.severity
+      @health -= active_event.severity
+    end
+
+    kill! if health <= 0
   end
 
   def age!
@@ -46,8 +56,7 @@ class Religion
   def initialize(world)
     @world = world
     @name = Faker::App.name
-    @faithful = 100.times.map { Person.new }
-    @faithful.each { |f| f.religion = self }
+    @faithful = 100.times.map { Person.new(self) }
     @policies = 3.times.map { Policy.new }
   end
 
@@ -66,18 +75,13 @@ class Religion
   end
 
   def tick
-    if number_of_living_faithful > 0
-      policy = policies.find { |p| p.act == world.active_event.affects }
-      consequence_value = policy && policy.consequence || 100
-      check = (100 - consequence_value)
-      pre = number_of_living_faithful
-      if check < world.active_event.severity
-        faithful.each { |person| person.health -= world.active_event.severity }
-      end
-      faithful.each { |person| person.kill! if person.health <= 0 }
-      post = number_of_living_faithful
-      puts "   The faithful of #{name} number #{post}. #{pre - post} have died in the plague."
-    end
+    return unless number_of_living_faithful > 0
+    pre = number_of_living_faithful
+
+    policy = policies.find { |p| p.act == world.active_event.affects }
+    faithful.each { |p| p.tick(policy, world.active_event) }
+    post = number_of_living_faithful
+    puts "   The faithful of #{name} number #{post}. #{pre - post} have died in the plague."
   end
 end
 

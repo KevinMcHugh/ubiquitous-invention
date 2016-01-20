@@ -19,12 +19,14 @@ class Religion
       "     Alive: #{number_of_living_faithful}/ #{faithful.count}"
   end
 
-  def inspect
-    name
-  end
+  def inspect; name;end
 
   def number_of_living_faithful
     faithful.count(&:alive?)
+  end
+
+  def add_member(person)
+    @faithful << person
   end
 
   def tick
@@ -81,12 +83,21 @@ class World
     @year += 1
     @active_event = Event.new
     puts "Year #{year}: A plague strikes those who #{active_event.affects}. Severity is #{active_event.severity}%"
+
     religions.each(&:tick)
+
     causes_of_death = people.find_all { |p| p.year_of_death == year }.map(&:cause_of_death)
     causes_of_death.inject(Hash.new(0)) { |h, e| h[e] += 1 ; h }.each_pair do |cause, count|
       puts "  #{count} have died due to #{cause}"
     end
-    puts "#{population} survive."
+    newly_born_or_not = {true => [], false => []}
+      .merge(people
+      .find_all(&:alive?)
+      .group_by { |p| p.year_of_birth == year })
+
+    puts "#{newly_born_or_not[true].count} are born this year."
+    puts "#{newly_born_or_not[false].count} survive."
+    puts "Total population is #{population}"
   end
 end
 

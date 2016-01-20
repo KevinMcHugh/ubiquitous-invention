@@ -1,16 +1,23 @@
 class Person
   include RollsDice
-  attr_reader :name, :alive, :age, :gender, :religion, :months_until_birth, :pregnant
-  attr_reader :cause_of_death, :year_of_death
+  attr_reader :first_name, :last_name, :alive, :age, :gender, :religion, :pregnant
+  attr_reader :cause_of_death, :year_of_death, :year_of_birth, :months_until_birth
   attr_accessor :health
 
-  def initialize(religion)
-    @name = Faker::Name.name
+  def initialize(religion, last_name=Faker::Name.last_name, year=nil)
+    @first_name = Faker::Name.first_name
+    @last_name  = last_name
     @health = 75 + d(50)
     @alive = true
-    @age = d(70)
     @gender = d(2) == 1 ? :man : :woman
     @religion = religion
+    if year
+      @year_of_birth = year
+      @age = 0
+    else
+      @age = d(70)
+      @year_of_birth = -age
+    end
   end
 
   def alive?; alive; end
@@ -25,7 +32,7 @@ class Person
     event = world.active_event
 
     subtract_health(event.severity, event.affects, world.year) if check < event.severity
-
+    reproduce!(world.year)
     age!(world.year)
     kill! if health <= 0
   end
@@ -49,10 +56,13 @@ class Person
     end
   end
 
-  def reproduce!
-    if (age > 15 && age < 45) && d(2) == 1 && !pregnant
+  def reproduce!(year)
+    return unless alive?
+    if pregnant
+      religion.add_member(Person.new(religion, last_name, year))
+      @pregnant = false
+    elsif (age > 15 && age < 45) && d(2) == 2
       @pregnant = true
-      @months_until_birth = 9
     end
   end
 end

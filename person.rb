@@ -7,7 +7,7 @@ class Person
   def initialize(religion, last_name=Faker::Name.last_name, year=nil)
     @first_name = Faker::Name.first_name
     @last_name  = last_name
-    @health = 75 + d(50)
+    @health = 175 + d(50)
     @alive = true
     @gender = d(2) == 1 ? :man : :woman
     @religion = religion
@@ -31,7 +31,7 @@ class Person
     check = (100 - consequence_value)
     event = world.active_event
 
-    subtract_health(event.severity, event.affects, world.year) if check < event.severity
+    subtract_health(event.severity, event.affected_species, world.year) if check < event.severity
     reproduce!(world.year)
     age!(world.year)
     kill! if health <= 0

@@ -32,7 +32,7 @@ class Religion
   def tick
     return unless number_of_living_faithful > 0
 
-    policy = policies.find { |p| p.act == world.active_event.affects }
+    policy = policies.find { |p| p.act == world.active_event.affected_species }
     faithful.each { |p| p.tick(policy, world) }
     puts "   The followers of #{name} number #{number_of_living_faithful}."
   end
@@ -59,6 +59,10 @@ class Policy
 end
 
 class World
+  def self.species
+    [:chicken, :cow, :fish, :human, :pork, :vegetables]
+  end
+
   attr_reader :active_event, :religions, :year
   def initialize
     @year = 0
@@ -79,10 +83,12 @@ class World
     religions.flat_map(&:faithful)
   end
 
+  def species; self.class.species; end
+
   def tick
     @year += 1
-    @active_event = Event.new
-    puts "Year #{year}: A plague strikes those who #{active_event.affects}. Severity is #{active_event.severity}%"
+    @active_event = Plague.new(self)
+    puts "Year #{year}: #{@active_event.to_s}"
 
     religions.each(&:tick)
 
@@ -103,10 +109,19 @@ end
 
 class Event
   include RollsDice
-  attr_reader :affects, :severity
-  def initialize
-    @affects = Policy.acts.sample
+end
+
+class Plague < Event
+  attr_reader :affected_species, :viability, :severity
+  def initialize(world)
+    @affected_species = world.species.sample([0,0,1,1,1,2].sample)
+    @viability = d(100)
     @severity = d(100)
+    @severity *= 25 if affected_species.include?(:human)
+  end
+
+  def to_s
+    "A plague strikes #{affected_species}! Viability is #{viability}% and Severity is #{severity}%."
   end
 end
 

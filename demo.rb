@@ -104,6 +104,13 @@ class World
     puts "#{newly_born_or_not[true].count} are born this year."
     puts "#{newly_born_or_not[false].count} survive."
     puts "Total population is #{population}"
+    age_brackets = people.find_all(&:alive?).map {|p| p.age / 10 }
+    age_counts = Hash.new(0)
+    age_brackets.each do |age|
+      age_counts[age] += 1
+    end
+
+    puts age_counts.sort.to_h
   end
 end
 
@@ -115,13 +122,15 @@ class Plague < Event
   attr_reader :affected_species, :viability, :severity
   def initialize(world)
     @affected_species = world.species.sample([0,0,1,1,1,2].sample)
-    @viability = d(100)
-    @severity = d(100)
-    @severity *= 25 if affected_species.include?(:human)
+    @viability = d(50)
+    @severity = d(50)
+    @severity *= 10 if affected_species.include?(:human)
   end
 
   def to_s
-    "A plague strikes #{affected_species}! Viability is #{viability}% and Severity is #{severity}%."
+    if affected_species.any?
+      "A plague strikes #{affected_species}! Viability is #{viability}% and Severity is #{severity}%."
+    end
   end
 end
 

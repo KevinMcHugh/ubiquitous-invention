@@ -1,6 +1,6 @@
 class Person
   include RollsDice
-  attr_reader :first_name, :last_name, :alive, :age, :gender, :religion, :pregnant
+  attr_reader :first_name, :last_name, :alive, :age, :child_bearing, :religion, :pregnant
   attr_reader :cause_of_death, :year_of_death, :year_of_birth, :months_until_birth
   attr_accessor :health
 
@@ -9,7 +9,7 @@ class Person
     @last_name  = last_name
     @health = 175 + d(50)
     @alive = true
-    @gender = d(2) == 1 ? :man : :woman
+    @child_bearing = [true, false].sample
     @religion = religion
     if year
       @year_of_birth = year
@@ -61,7 +61,7 @@ class Person
     if pregnant
       religion.add_member(Person.new(religion, last_name, year))
       @pregnant = false
-    elsif (age > 15 && age < 45) && d(2) == 2
+    elsif (age > 15 && age < 45) && child_bearing
       @pregnant = true
     end
   end

@@ -40,11 +40,12 @@ end
 
 class Policy
   def self.acts
-    [:eat_pork, :eat_beef, :eat_vegetarian, :eat_dairy, :eat_seafood]
+    # TODO none of this works as it should.
+    []
   end
 
   def self.consequences
-    [5, 10, 25, 50, 75]
+    []
   end
 
   attr_reader :act, :consequence
@@ -60,7 +61,7 @@ end
 
 class World
   def self.species
-    [:chicken, :cow, :fish, :human, :pork, :vegetables]
+    [:chicken, :cow, :fish, :pork, :vegetables]
   end
 
   attr_reader :active_event, :religions, :year
@@ -101,16 +102,17 @@ class World
       .find_all(&:alive?)
       .group_by { |p| p.year_of_birth == year })
 
-    puts "#{newly_born_or_not[true].count} are born this year."
-    puts "#{newly_born_or_not[false].count} survive."
-    puts "Total population is #{population}"
+    puts "    #{newly_born_or_not[true].count} are born this year."
+    puts "    #{newly_born_or_not[false].count} survive."
+    puts "  Total population is #{population}"
     age_brackets = people.find_all(&:alive?).map {|p| p.age / 10 }
     age_counts = Hash.new(0)
     age_brackets.each do |age|
       age_counts[age] += 1
     end
 
-    puts age_counts.sort.to_h
+    # puts "    #{age_counts.sort.to_h}"
+    puts people.find_all(&:alive?).sort_by(&:age).map(&:to_s)
   end
 end
 
@@ -123,8 +125,8 @@ class Plague < Event
   def initialize(world)
     @affected_species = world.species.sample([0,0,1,1,1,2].sample)
     @viability = d(50)
-    @severity = d(50)
-    @severity *= 10 if affected_species.include?(:human)
+    @severity = d(30)
+    @severity *= 5 if affected_species.include?(:human)
   end
 
   def to_s

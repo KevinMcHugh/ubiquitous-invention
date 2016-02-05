@@ -125,7 +125,7 @@ class Plague < Event
   def initialize(world)
     @affected_species = world.species.sample([0,0,1,1,1,2].sample)
     @viability = d(50)
-    @severity = d(30)
+    @severity = d(20)
     @severity *= 5 if affected_species.include?(:human)
   end
 
@@ -141,7 +141,7 @@ require 'pp'
 require 'pry'
 require_relative 'person'
 world = World.new
-5.times do
+1.times do
   r = world.add_religion
   puts r.long_string
   r

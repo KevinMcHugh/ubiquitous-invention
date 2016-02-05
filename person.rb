@@ -60,7 +60,7 @@ class Person
   def reproduce!(year)
     return unless alive?
     if pregnant
-      religion.add_member(Person.new(religion, family_name, year))
+      religion.add_member(Person.new(religion, "O'#{family_name}", year))
       @pregnant = false
     elsif (age >= minimum_pregnancy_age && age <= maximum_pregnancy_age) && child_bearing
       @pregnant = true

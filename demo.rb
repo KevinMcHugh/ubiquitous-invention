@@ -9,8 +9,8 @@ class Religion
   def initialize(world)
     @world = world
     @name = Faker::Name.first_name
+    @policies = 4.times.map { Policy.new(world) }
     @faithful = 100.times.map { Person.new(self) }
-    @policies = 3.times.map { Policy.new }
   end
 
   def long_string
@@ -32,36 +32,29 @@ class Religion
   def tick
     return unless number_of_living_faithful > 0
 
-    policy = policies.find { |p| p.act == world.active_event.affected_species }
-    faithful.each { |p| p.tick(policy, world) }
+    faithful.each { |p| p.tick(world) }
     puts "   The followers of #{name} number #{number_of_living_faithful}."
   end
 end
 
-class Policy
-  def self.acts
-    # TODO none of this works as it should.
-    []
+class Species
+  def self.names
+    [:chicken, :cow, :fish, :pork, :vegetables]
   end
 
-  def self.consequences
-    []
+  attr_reader :name
+  def initialize(name)
+    @name = name
   end
 
-  attr_reader :act, :consequence
-  def initialize
-    @act = self.class.acts.sample
-    @consequence = self.class.consequences.sample
-  end
-
-  def inspect
-    "#{act} => #{consequence}"
-  end
+  def inspect; "#{name}"; end
+  def to_s; inspect; end
 end
 
 class World
-  def self.species
-    [:chicken, :cow, :fish, :pork, :vegetables]
+  def species
+    # TODO: Person already supports certain foods being unavailable...
+    @species ||= Species.names.map { |n| Species.new(n) }
   end
 
   attr_reader :active_event, :religions, :year
@@ -83,8 +76,6 @@ class World
   def people
     religions.flat_map(&:faithful)
   end
-
-  def species; self.class.species; end
 
   def tick
     @year += 1
@@ -112,7 +103,7 @@ class World
     end
 
     # puts "    #{age_counts.sort.to_h}"
-    puts people.find_all(&:alive?).sort_by(&:age).map(&:to_s)
+    # puts people.find_all(&:alive?).sort_by(&:age).map(&:to_s)
   end
 end
 
@@ -124,7 +115,7 @@ class Plague < Event
   attr_reader :affected_species, :viability, :severity
   def initialize(world)
     @affected_species = world.species.sample([0,0,1,1,1,2].sample)
-    @viability = d(50)
+    @viability = d(50) + 40
     @severity = d(20)
     @severity *= 5 if affected_species.include?(:human)
   end
@@ -140,8 +131,10 @@ require 'faker'
 require 'pp'
 require 'pry'
 require_relative 'person'
+require_relative 'policy'
+
 world = World.new
-1.times do
+5.times do
   r = world.add_religion
   puts r.long_string
   r
